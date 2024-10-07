@@ -37,6 +37,41 @@ static string promptForActor(const string& prompt, const imdb& db)
   }
 }
 
+void shortestParth(string& source, string& target, imdb& imdb) {
+  list<path> partialPaths;
+  set<string> previouslySeenActors;
+  set<film> previouslySeenFilms;
+
+  path startActorPath = path(source);
+  partialPaths.push_back(startActorPath);
+  while (!partialPaths.empty() && partialPaths.front().getLength() <= 5) {
+    path front = partialPaths.front();
+    partialPaths.pop_front();
+    vector<film> actorMovies;
+    string last = front.getLastPlayer();
+    imdb.getCredits(front.getLastPlayer(), actorMovies);
+    for (size_t i = 0; i < actorMovies.size(); i++) { 
+      bool seenMovie = previouslySeenFilms.insert(actorMovies[i]).second;
+      if (!seenMovie) continue;
+      vector<string> moviesCast;
+      imdb.getCast(actorMovies[i], moviesCast);
+      for (size_t j = 0; j < moviesCast.size(); j++) {
+        bool seenMember = previouslySeenActors.insert(moviesCast[j]).second;
+        if (!seenMember) continue;
+        path clone = front;
+        clone.addConnection(actorMovies[i], moviesCast[j]);
+        if (moviesCast[j] == target) {
+          cout << endl << clone << endl;
+          return;
+        } else { 
+          partialPaths.push_back(clone);
+        }
+      } 
+    } 
+  } 
+  cout << endl << "No path between those two people could be found." << endl << endl;
+} 
+
 /**
  * Serves as the main entry point for the six-degrees executable.
  * There are no parameters to speak of.
@@ -69,12 +104,12 @@ int main(int argc, const char *argv[])
     if (source == target) {
       cout << "Good one.  This is only interesting if you specify two different people." << endl;
     } else {
-      // replace the following line by a call to your generateShortestPath routine... 
-      cout << endl << "No path between those two people could be found." << endl << endl;
+      shortestParth(source, target, db);
     }
   }
   
   cout << "Thanks for playing!" << endl;
   return 0;
 }
+
 
